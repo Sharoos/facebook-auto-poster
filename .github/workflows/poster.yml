@@ -2,13 +2,14 @@ name: Auto Post to Facebook
 
 on:
   schedule:
-    # Runs automatically every hour
     - cron: '0 * * * *'
-  workflow_dispatch: # Allows manual single-click trigger from GitHub
+  workflow_dispatch:
 
 jobs:
   run-poster:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grants git push permissions to GITHUB_TOKEN
     steps:
       - name: Check out repo code
         uses: actions/checkout@v4
