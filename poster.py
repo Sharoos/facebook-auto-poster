@@ -175,33 +175,34 @@ def create_single_product_caption(product):
 
     templates = [
         (
-            f"🔥 MEGA PRICE DROP | {discount}% OFF! 🔥\n\n"
-            f"🛍️ Product: {title}\n"
+            f"✨ {title} ✨\n\n"
+            f"🔥 MEGA PRICE DROP | {discount}% OFF! 🔥\n"
             f"💰 Offer Price: ₹{price} (WAS ₹{compare_at})\n\n"
             f"👉 Link in bio to buy on Best Price Zone: {MY_WEBSITE}\n\n"
             f"⚡ Hurry, limited stock available! Grab yours before price changes."
             f"{hashtags}"
         ),
         (
-            f"⚡ SPECIAL DEAL OF THE DAY ⚡\n\n"
-            f"✨ Item: {title}\n"
+            f"🔹 {title} 🔹\n\n"
+            f"⚡ SPECIAL DEAL OF THE DAY ⚡\n"
             f"🏷️ Discount: Save {discount}% TODAY!\n"
-            f"💸 Deal Price: ₹{price} (MSRP: ₹{compare_at})\n\n"
+            f"💸 Deal Price: ₹{price} (MRP: ₹{compare_at})\n\n"
             f"🛒 Order online (Link in Bio): {MY_WEBSITE}\n\n"
             f"📦 Fast shipping available across India!"
             f"{hashtags}"
         ),
         (
-            f"📢 HUGE SAVINGS ALERT! 📢\n\n"
-            f"Get {title} for just ₹{price}! (Original Price: ₹{compare_at})\n\n"
+            f"{title}\n\n"
+            f"📢 HUGE SAVINGS ALERT! 📢\n"
+            f"Get it for just ₹{price}! (Original Price: ₹{compare_at})\n\n"
             f"💥 You save {discount}% on this order.\n\n"
             f"🔗 Shop Now via link in bio: {MY_WEBSITE}\n\n"
             f"⏰ Offer valid while stocks last!"
             f"{hashtags}"
         ),
         (
-            f"🛒 TRENDING NOW ON BEST PRICE ZONE 🛒\n\n"
-            f"🔹 {title}\n"
+            f"🛍️ {title} 🛍️\n\n"
+            f"🛒 TRENDING NOW ON BEST PRICE ZONE 🛒\n"
             f"🔹 Special Price: ₹{price} ({discount}% OFF)\n\n"
             f"Click the link in our bio to order yours today: {MY_WEBSITE} 👇"
             f"{hashtags}"
