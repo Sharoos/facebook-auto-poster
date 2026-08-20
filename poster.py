@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 import requests
 
 # ==========================================
@@ -11,26 +12,59 @@ TRACKING_FILE = "posted_products.json"
 
 # Meta API Credentials
 FB_PAGE_ID = "104412797589430"
-IG_USER_ID = "17841458404272372" # Your verified Instagram Business ID
+IG_USER_ID = "17841458404272372"  # Your verified Instagram Business ID
 # Ensure your new permanent token is set in your environment variables/GitHub Secrets
-FB_ACCESS_TOKEN = os.environ.get("FB_ACCESS_TOKEN") 
+FB_ACCESS_TOKEN = os.environ.get("FB_ACCESS_TOKEN")
 FB_GRAPH_VERSION = "v20.0"
 
 # Posting Settings for GitHub Actions (1 post per hourly run)
 POSTS_PER_RUN = 1
 
 COLLECTIONS = [
-    {"url": "https://deodap.in/collections/all/products.json", "name": "Main Catalog"},
-    {"url": "https://deodap.in/collections/just-arrived/products.json", "name": "New Arrivals"},
-    {"url": "https://deodap.in/collections/customer-favorites/products.json", "name": "Bestsellers"},
-    {"url": "https://deodap.in/collections/kitchen-dining-items/products.json", "name": "Kitchenware"},
-    {"url": "https://deodap.in/collections/home_decor/products.json", "name": "Home & Living"},
-    {"url": "https://deodap.in/collections/home-improvement/products.json", "name": "Hardware & Tools"},
-    {"url": "https://deodap.in/collections/beauty-health-grocery/products.json", "name": "Beauty & Personal Care"},
-    {"url": "https://deodap.in/collections/jewellery-accessories/products.json", "name": "Jewellery & Accessories"},
-    {"url": "https://deodap.in/collections/stationery/products.json", "name": "Stationery & Office"},
-    {"url": "https://deodap.in/collections/chargers-power/products.json", "name": "Mobile & Gadgets"},
-    {"url": "https://deodap.in/collections/mega-savings/products.json", "name": "Under ₹99 Store"},
+    {
+        "url": "https://deodap.in/collections/all/products.json",
+        "name": "Main Catalog",
+    },
+    {
+        "url": "https://deodap.in/collections/just-arrived/products.json",
+        "name": "New Arrivals",
+    },
+    {
+        "url": "https://deodap.in/collections/customer-favorites/products.json",
+        "name": "Bestsellers",
+    },
+    {
+        "url": "https://deodap.in/collections/kitchen-dining-items/products.json",
+        "name": "Kitchenware",
+    },
+    {
+        "url": "https://deodap.in/collections/home_decor/products.json",
+        "name": "Home & Living",
+    },
+    {
+        "url": "https://deodap.in/collections/home-improvement/products.json",
+        "name": "Hardware & Tools",
+    },
+    {
+        "url": "https://deodap.in/collections/beauty-health-grocery/products.json",
+        "name": "Beauty & Personal Care",
+    },
+    {
+        "url": "https://deodap.in/collections/jewellery-accessories/products.json",
+        "name": "Jewellery & Accessories",
+    },
+    {
+        "url": "https://deodap.in/collections/stationery/products.json",
+        "name": "Stationery & Office",
+    },
+    {
+        "url": "https://deodap.in/collections/chargers-power/products.json",
+        "name": "Mobile & Gadgets",
+    },
+    {
+        "url": "https://deodap.in/collections/mega-savings/products.json",
+        "name": "Under ₹99 Store",
+    },
 ]
 
 
@@ -68,8 +102,58 @@ def fetch_products_from_collection(collection_url):
     return []
 
 
+def generate_dynamic_hashtags(product):
+    """Dynamically extracts keywords from the product title and pairs them with rotated deal tags."""
+    title = product.get("title", "")
+
+    stop_words = {
+        "for",
+        "and",
+        "the",
+        "with",
+        "pcs",
+        "pack",
+        "inch",
+        "mm",
+        "cm",
+        "to",
+        "of",
+        "in",
+        "on",
+        "by",
+        "an",
+        "a",
+    }
+    words = re.findall(r"\b[A-Za-z0-9]+\b", title)
+
+    keywords = []
+    for word in words:
+        if word.lower() not in stop_words and len(word) > 2:
+            keywords.append(f"#{word.capitalize()}")
+
+    # Keep unique keywords from the title (up to 4)
+    keywords = list(dict.fromkeys(keywords))[:4]
+
+    # Dynamic pool of high-performing e-commerce and deal hashtags
+    niche_tags = [
+        "#BestPriceZone",
+        "#DealOfTheDay",
+        "#BudgetDeals",
+        "#TrendingFinds",
+        "#ShopSmart",
+        "#OnlineShoppingIndia",
+        "#MegaDiscounts",
+        "#MustHaveGadgets",
+    ]
+
+    # Combine title-specific tags with a random sample of rotational deal tags
+    all_tags = keywords + random.sample(niche_tags, min(3, len(niche_tags)))
+
+    return "\n\n" + " ".join(all_tags)
+
+
 def create_single_product_caption(product):
-    """Creates a varied, high-converting caption for 1 product."""
+    """Creates a varied, high-converting caption with dynamic hashtags for 1 product."""
     title = product["title"]
     variant = product["variants"][0]
     price = int(float(variant["price"]))
@@ -86,6 +170,8 @@ def create_single_product_caption(product):
         else 0
     )
 
+    hashtags = generate_dynamic_hashtags(product)
+
     templates = [
         (
             f"🔥 MEGA PRICE DROP | {discount}% OFF! 🔥\n\n"
@@ -93,14 +179,16 @@ def create_single_product_caption(product):
             f"💰 Offer Price: ₹{price} (WAS ₹{compare_at})\n\n"
             f"👉 Link in bio to buy on Best Price Zone: {MY_WEBSITE}\n\n"
             f"⚡ Hurry, limited stock available! Grab yours before price changes."
+            f"{hashtags}"
         ),
         (
             f"⚡ SPECIAL DEAL OF THE DAY ⚡\n\n"
             f"✨ Item: {title}\n"
             f"🏷️ Discount: Save {discount}% TODAY!\n"
-            f"💸 Deal Price: ₹{price} (MRP: ₹{compare_at})\n\n"
+            f"💸 Deal Price: ₹{price} (MSRP: ₹{compare_at})\n\n"
             f"🛒 Order online (Link in Bio): {MY_WEBSITE}\n\n"
             f"📦 Fast shipping available across India!"
+            f"{hashtags}"
         ),
         (
             f"📢 HUGE SAVINGS ALERT! 📢\n\n"
@@ -108,12 +196,14 @@ def create_single_product_caption(product):
             f"💥 You save {discount}% on this order.\n\n"
             f"🔗 Shop Now via link in bio: {MY_WEBSITE}\n\n"
             f"⏰ Offer valid while stocks last!"
+            f"{hashtags}"
         ),
         (
             f"🛒 TRENDING NOW ON BEST PRICE ZONE 🛒\n\n"
             f"🔹 {title}\n"
             f"🔹 Special Price: ₹{price} ({discount}% OFF)\n\n"
             f"Click the link in our bio to order yours today: {MY_WEBSITE} 👇"
+            f"{hashtags}"
         ),
     ]
 
@@ -126,7 +216,9 @@ def post_photo_to_facebook(image_url, caption):
         print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
         return False
 
-    fb_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{FB_PAGE_ID}/photos"
+    fb_url = (
+        f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{FB_PAGE_ID}/photos"
+    )
 
     payload = {
         "url": image_url,
@@ -139,7 +231,9 @@ def post_photo_to_facebook(image_url, caption):
         res_data = res.json()
 
         if res.status_code == 200 and "id" in res_data:
-            print(f"✅ Posted to Facebook successfully! Post ID: {res_data['id']}")
+            print(
+                f"✅ Posted to Facebook successfully! Post ID: {res_data['id']}"
+            )
             return True
         else:
             print(f"❌ Facebook API Error: {res_data}")
@@ -156,7 +250,9 @@ def post_photo_to_instagram(image_url, caption):
         return False
 
     # STEP 1: Create a Container
-    container_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media"
+    container_url = (
+        f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media"
+    )
     container_payload = {
         "image_url": image_url,
         "caption": caption,
@@ -184,7 +280,9 @@ def post_photo_to_instagram(image_url, caption):
         pub_data = pub_res.json()
 
         if pub_res.status_code == 200 and "id" in pub_data:
-            print(f"✅ Posted to Instagram successfully! Post ID: {pub_data['id']}")
+            print(
+                f"✅ Posted to Instagram successfully! Post ID: {pub_data['id']}"
+            )
             return True
         else:
             print(f"❌ Instagram Publish Error: {pub_data}")
@@ -222,7 +320,9 @@ def run_single_post():
                 break
 
     if not candidates:
-        print("⚠️ Not enough new products found. Resetting history log to reuse products...")
+        print(
+            "⚠️ Not enough new products found. Resetting history log to reuse products..."
+        )
         posted_ids.clear()
         save_posted_history(posted_ids)
         return
