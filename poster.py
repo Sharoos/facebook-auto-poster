@@ -9,59 +9,28 @@ import requests
 MY_WEBSITE = "https://www.bestpricezone.in"
 TRACKING_FILE = "posted_products.json"
 
-# Facebook API Credentials
+# Meta API Credentials
 FB_PAGE_ID = "104412797589430"
-FB_ACCESS_TOKEN = os.environ.get("FB_ACCESS_TOKEN")
+IG_USER_ID = "17841458404272372" # Your verified Instagram Business ID
+# Ensure your new permanent token is set in your environment variables/GitHub Secrets
+FB_ACCESS_TOKEN = os.environ.get("FB_ACCESS_TOKEN") 
 FB_GRAPH_VERSION = "v20.0"
 
 # Posting Settings for GitHub Actions (1 post per hourly run)
 POSTS_PER_RUN = 1
 
 COLLECTIONS = [
-    {
-        "url": "https://deodap.in/collections/all/products.json",
-        "name": "Main Catalog",
-    },
-    {
-        "url": "https://deodap.in/collections/just-arrived/products.json",
-        "name": "New Arrivals",
-    },
-    {
-        "url": "https://deodap.in/collections/customer-favorites/products.json",
-        "name": "Bestsellers",
-    },
-    {
-        "url": "https://deodap.in/collections/kitchen-dining-items/products.json",
-        "name": "Kitchenware",
-    },
-    {
-        "url": "https://deodap.in/collections/home_decor/products.json",
-        "name": "Home & Living",
-    },
-    {
-        "url": "https://deodap.in/collections/home-improvement/products.json",
-        "name": "Hardware & Tools",
-    },
-    {
-        "url": "https://deodap.in/collections/beauty-health-grocery/products.json",
-        "name": "Beauty & Personal Care",
-    },
-    {
-        "url": "https://deodap.in/collections/jewellery-accessories/products.json",
-        "name": "Jewellery & Accessories",
-    },
-    {
-        "url": "https://deodap.in/collections/stationery/products.json",
-        "name": "Stationery & Office",
-    },
-    {
-        "url": "https://deodap.in/collections/chargers-power/products.json",
-        "name": "Mobile & Gadgets",
-    },
-    {
-        "url": "https://deodap.in/collections/mega-savings/products.json",
-        "name": "Under ₹99 Store",
-    },
+    {"url": "https://deodap.in/collections/all/products.json", "name": "Main Catalog"},
+    {"url": "https://deodap.in/collections/just-arrived/products.json", "name": "New Arrivals"},
+    {"url": "https://deodap.in/collections/customer-favorites/products.json", "name": "Bestsellers"},
+    {"url": "https://deodap.in/collections/kitchen-dining-items/products.json", "name": "Kitchenware"},
+    {"url": "https://deodap.in/collections/home_decor/products.json", "name": "Home & Living"},
+    {"url": "https://deodap.in/collections/home-improvement/products.json", "name": "Hardware & Tools"},
+    {"url": "https://deodap.in/collections/beauty-health-grocery/products.json", "name": "Beauty & Personal Care"},
+    {"url": "https://deodap.in/collections/jewellery-accessories/products.json", "name": "Jewellery & Accessories"},
+    {"url": "https://deodap.in/collections/stationery/products.json", "name": "Stationery & Office"},
+    {"url": "https://deodap.in/collections/chargers-power/products.json", "name": "Mobile & Gadgets"},
+    {"url": "https://deodap.in/collections/mega-savings/products.json", "name": "Under ₹99 Store"},
 ]
 
 
@@ -122,29 +91,29 @@ def create_single_product_caption(product):
             f"🔥 MEGA PRICE DROP | {discount}% OFF! 🔥\n\n"
             f"🛍️ Product: {title}\n"
             f"💰 Offer Price: ₹{price} (WAS ₹{compare_at})\n\n"
-            f"👉 Buy Now on Best Price Zone: {MY_WEBSITE}\n\n"
+            f"👉 Link in bio to buy on Best Price Zone: {MY_WEBSITE}\n\n"
             f"⚡ Hurry, limited stock available! Grab yours before price changes."
         ),
         (
             f"⚡ SPECIAL DEAL OF THE DAY ⚡\n\n"
             f"✨ Item: {title}\n"
             f"🏷️ Discount: Save {discount}% TODAY!\n"
-            f"💸 Deal Price: ₹{price} (MSRP: ₹{compare_at})\n\n"
-            f"🛒 Order online here: {MY_WEBSITE}\n\n"
+            f"💸 Deal Price: ₹{price} (MRP: ₹{compare_at})\n\n"
+            f"🛒 Order online (Link in Bio): {MY_WEBSITE}\n\n"
             f"📦 Fast shipping available across India!"
         ),
         (
             f"📢 HUGE SAVINGS ALERT! 📢\n\n"
             f"Get {title} for just ₹{price}! (Original Price: ₹{compare_at})\n\n"
             f"💥 You save {discount}% on this order.\n\n"
-            f"🔗 Shop Now: {MY_WEBSITE}\n\n"
+            f"🔗 Shop Now via link in bio: {MY_WEBSITE}\n\n"
             f"⏰ Offer valid while stocks last!"
         ),
         (
             f"🛒 TRENDING NOW ON BEST PRICE ZONE 🛒\n\n"
             f"🔹 {title}\n"
             f"🔹 Special Price: ₹{price} ({discount}% OFF)\n\n"
-            f"Click to order yours today: {MY_WEBSITE} 👇"
+            f"Click the link in our bio to order yours today: {MY_WEBSITE} 👇"
         ),
     ]
 
@@ -157,9 +126,7 @@ def post_photo_to_facebook(image_url, caption):
         print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
         return False
 
-    fb_url = (
-        f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{FB_PAGE_ID}/photos"
-    )
+    fb_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{FB_PAGE_ID}/photos"
 
     payload = {
         "url": image_url,
@@ -172,15 +139,59 @@ def post_photo_to_facebook(image_url, caption):
         res_data = res.json()
 
         if res.status_code == 200 and "id" in res_data:
-            print(
-                f"✅ Posted to Facebook successfully! Post ID: {res_data['id']}"
-            )
+            print(f"✅ Posted to Facebook successfully! Post ID: {res_data['id']}")
             return True
         else:
             print(f"❌ Facebook API Error: {res_data}")
             return False
     except Exception as e:
         print(f"❌ Failed to connect to Facebook API: {e}")
+        return False
+
+
+def post_photo_to_instagram(image_url, caption):
+    """Posts image + caption to Instagram Business Account via 2-step process."""
+    if not FB_ACCESS_TOKEN:
+        print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
+        return False
+
+    # STEP 1: Create a Container
+    container_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media"
+    container_payload = {
+        "image_url": image_url,
+        "caption": caption,
+        "access_token": FB_ACCESS_TOKEN,
+    }
+
+    try:
+        res = requests.post(container_url, data=container_payload)
+        res_data = res.json()
+
+        if res.status_code != 200 or "id" not in res_data:
+            print(f"❌ Instagram Container Creation Error: {res_data}")
+            return False
+
+        creation_id = res_data["id"]
+
+        # STEP 2: Publish the Container
+        publish_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media_publish"
+        publish_payload = {
+            "creation_id": creation_id,
+            "access_token": FB_ACCESS_TOKEN,
+        }
+
+        pub_res = requests.post(publish_url, data=publish_payload)
+        pub_data = pub_res.json()
+
+        if pub_res.status_code == 200 and "id" in pub_data:
+            print(f"✅ Posted to Instagram successfully! Post ID: {pub_data['id']}")
+            return True
+        else:
+            print(f"❌ Instagram Publish Error: {pub_data}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Failed to connect to Instagram API: {e}")
         return False
 
 
@@ -211,9 +222,7 @@ def run_single_post():
                 break
 
     if not candidates:
-        print(
-            "⚠️ Not enough new products found. Resetting history log to reuse products..."
-        )
+        print("⚠️ Not enough new products found. Resetting history log to reuse products...")
         posted_ids.clear()
         save_posted_history(posted_ids)
         return
@@ -227,12 +236,15 @@ def run_single_post():
     print(f"Product: {product['title']}")
     print(f"Image: {image_url}")
 
-    success = post_photo_to_facebook(image_url, caption)
+    # Attempt publishing to both platforms
+    fb_success = post_photo_to_facebook(image_url, caption)
+    ig_success = post_photo_to_instagram(image_url, caption)
 
-    if success:
+    # Log history if at least one platform succeeds
+    if fb_success or ig_success:
         posted_ids.add(p_id)
         save_posted_history(posted_ids)
-        print("🎉 Post published and history log updated.")
+        print("🎉 Log updated successfully.")
 
 
 if __name__ == "__main__":
