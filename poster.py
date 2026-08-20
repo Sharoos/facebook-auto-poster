@@ -2,6 +2,7 @@ import json
 import os
 import random
 import re
+import time
 import requests
 
 # ==========================================
@@ -244,7 +245,7 @@ def post_photo_to_facebook(image_url, caption):
 
 
 def post_photo_to_instagram(image_url, caption):
-    """Posts image + caption to Instagram Business Account via 2-step process."""
+    """Posts image + caption to Instagram Business Account via 2-step process with a delay."""
     if not FB_ACCESS_TOKEN:
         print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
         return False
@@ -268,6 +269,10 @@ def post_photo_to_instagram(image_url, caption):
             return False
 
         creation_id = res_data["id"]
+
+        # ⏳ Wait for Instagram to process the media container
+        print("⏳ Waiting for Instagram to process the media container...")
+        time.sleep(6)
 
         # STEP 2: Publish the Container
         publish_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media_publish"
