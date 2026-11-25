@@ -155,7 +155,7 @@ def generate_dynamic_hashtags(product):
 
 
 def create_single_product_caption(product):
-    """Creates a varied, high-converting caption with dynamic hashtags for 1 product."""
+    """Creates a varied caption starting with Rs. xxx and the item name."""
     title = product["title"]
     variant = product["variants"][0]
     price = int(float(variant["price"]))
@@ -176,7 +176,8 @@ def create_single_product_caption(product):
 
     templates = [
         (
-            f"✨ {title} ✨\n\n"
+            f"Rs. {price}\n"
+            f"{title}\n\n"
             f"🔥 MEGA PRICE DROP | {discount}% OFF! 🔥\n"
             f"💰 Offer Price: ₹{price} (WAS ₹{compare_at})\n\n"
             f"👉 Link in bio to buy on Best Price Zone: {MY_WEBSITE}\n\n"
@@ -184,7 +185,8 @@ def create_single_product_caption(product):
             f"{hashtags}"
         ),
         (
-            f"🔹 {title} 🔹\n\n"
+            f"Rs. {price}\n"
+            f"{title}\n\n"
             f"⚡ SPECIAL DEAL OF THE DAY ⚡\n"
             f"🏷️ Discount: Save {discount}% TODAY!\n"
             f"💸 Deal Price: ₹{price} (MRP: ₹{compare_at})\n\n"
@@ -193,6 +195,7 @@ def create_single_product_caption(product):
             f"{hashtags}"
         ),
         (
+            f"Rs. {price}\n"
             f"{title}\n\n"
             f"📢 HUGE SAVINGS ALERT! 📢\n"
             f"Get it for just ₹{price}! (Original Price: ₹{compare_at})\n\n"
@@ -202,7 +205,8 @@ def create_single_product_caption(product):
             f"{hashtags}"
         ),
         (
-            f"🛍️ {title} 🛍️\n\n"
+            f"Rs. {price}\n"
+            f"{title}\n\n"
             f"🛒 TRENDING NOW ON BEST PRICE ZONE 🛒\n"
             f"🔹 Special Price: ₹{price} ({discount}% OFF)\n\n"
             f"Click the link in our bio to order yours today: {MY_WEBSITE} 👇"
@@ -386,22 +390,29 @@ def post_photos_to_instagram(image_urls, caption):
 
     try:
         for img_url in urls:
-            res = requests.post(
-                container_url,
-                data={
-                    "image_url": img_url,
-                    "is_carousel_item": "true",
-                    "access_token": FB_ACCESS_TOKEN,
-                },
-            )
-            data = res.json()
-
-            if res.status_code == 200 and "id" in data:
-                child_ids.append(data["id"])
-            else:
-                print(
-                    f"❌ Instagram Carousel Item Error ({img_url}): {data}"
+            created = False
+            for attempt in range(2):
+                res = requests.post(
+                    container_url,
+                    data={
+                        "image_url": img_url,
+                        "is_carousel_item": "true",
+                        "access_token": FB_ACCESS_TOKEN,
+                    },
                 )
+                data = res.json()
+
+                if res.status_code == 200 and "id" in data:
+                    child_ids.append(data["id"])
+                    created = True
+                    break
+
+                if attempt == 0:
+                    time.sleep(2)
+                else:
+                    print(
+                        f"❌ Instagram Carousel Item Error ({img_url}): {data}"
+                    )
 
         if len(child_ids) < 2:
             print(
