@@ -155,7 +155,7 @@ def generate_dynamic_hashtags(product):
 
 
 def create_single_product_caption(product):
-    """Creates a varied caption starting with Rs. xxx and the item name."""
+    """Creates varied discount-hook captions with price and discount first, item name next, then the rest."""
     title = product["title"]
     variant = product["variants"][0]
     price = int(float(variant["price"]))
@@ -172,44 +172,40 @@ def create_single_product_caption(product):
         else 0
     )
 
+    savings = max(compare_at - price, 0)
     hashtags = generate_dynamic_hashtags(product)
 
     templates = [
         (
-            f"Rs. {price}\n"
+            f"Rs. {price}/- ONLY ({discount}% OFF!)\n"
             f"{title}\n\n"
-            f"🔥 MEGA PRICE DROP | {discount}% OFF! 🔥\n"
-            f"💰 Offer Price: ₹{price} (WAS ₹{compare_at})\n\n"
-            f"👉 Link in bio to buy on Best Price Zone: {MY_WEBSITE}\n\n"
-            f"⚡ Hurry, limited stock available! Grab yours before price changes."
+            f"Usually ₹{compare_at} — save ₹{savings} today.\n"
+            f"👉 Grab it before the offer resets: {MY_WEBSITE}\n"
+            f"⚡ Limited stock available"
             f"{hashtags}"
         ),
         (
-            f"Rs. {price}\n"
+            f"Just Rs. {price}/- after {discount}% discount 🔥\n"
             f"{title}\n\n"
-            f"⚡ SPECIAL DEAL OF THE DAY ⚡\n"
-            f"🏷️ Discount: Save {discount}% TODAY!\n"
-            f"💸 Deal Price: ₹{price} (MRP: ₹{compare_at})\n\n"
-            f"🛒 Order online (Link in Bio): {MY_WEBSITE}\n\n"
-            f"📦 Fast shipping available across India!"
+            f"MRP ₹{compare_at} • You save ₹{savings}\n"
+            f"🛒 Order here (link in bio): {MY_WEBSITE}\n"
+            f"📦 Pan-India delivery"
             f"{hashtags}"
         ),
         (
-            f"Rs. {price}\n"
+            f"Rs. {price}/- steal • {discount}% off MRP!\n"
             f"{title}\n\n"
-            f"📢 HUGE SAVINGS ALERT! 📢\n"
-            f"Get it for just ₹{price}! (Original Price: ₹{compare_at})\n\n"
-            f"💥 You save {discount}% on this order.\n\n"
-            f"🔗 Shop Now via link in bio: {MY_WEBSITE}\n\n"
-            f"⏰ Offer valid while stocks last!"
+            f"Down from ₹{compare_at} while stock lasts.\n"
+            f"🔗 Tap link in bio or visit: {MY_WEBSITE}\n"
+            f"⏰ Don't sleep on this price"
             f"{hashtags}"
         ),
         (
-            f"Rs. {price}\n"
+            f"FLAT {discount}% OFF → Rs. {price}/- only\n"
             f"{title}\n\n"
-            f"🛒 TRENDING NOW ON BEST PRICE ZONE 🛒\n"
-            f"🔹 Special Price: ₹{price} ({discount}% OFF)\n\n"
-            f"Click the link in our bio to order yours today: {MY_WEBSITE} 👇"
+            f"Compare at ₹{compare_at} — quick deal on Best Price Zone.\n"
+            f"👉 Shop now: {MY_WEBSITE}\n"
+            f"🔥 Limited pieces"
             f"{hashtags}"
         ),
     ]
