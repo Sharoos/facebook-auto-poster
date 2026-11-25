@@ -20,6 +20,7 @@ FB_GRAPH_VERSION = "v20.0"
 
 # Posting Settings for GitHub Actions (1 post per hourly run)
 POSTS_PER_RUN = 1
+MAX_PHOTOS_PER_POST = 6
 
 COLLECTIONS = [
     {
@@ -213,7 +214,7 @@ def create_single_product_caption(product):
 
 
 def post_photo_to_facebook(image_url, caption):
-    """Posts image + caption directly to Facebook Page."""
+    """Posts a single image + caption directly to Facebook Page."""
     if not FB_ACCESS_TOKEN:
         print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
         return False
@@ -245,8 +246,74 @@ def post_photo_to_facebook(image_url, caption):
         return False
 
 
+def post_photos_to_facebook(image_urls, caption):
+    """Posts up to 6 images + caption to Facebook Page."""
+    if not FB_ACCESS_TOKEN:
+        print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
+        return False
+
+    urls = image_urls[:MAX_PHOTOS_PER_POST]
+    if not urls:
+        return False
+
+    if len(urls) == 1:
+        return post_photo_to_facebook(urls[0], caption)
+
+    media_ids = []
+    upload_url = (
+        f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{FB_PAGE_ID}/photos"
+    )
+
+    try:
+        for img_url in urls:
+            res = requests.post(
+                upload_url,
+                data={
+                    "url": img_url,
+                    "published": "false",
+                    "access_token": FB_ACCESS_TOKEN,
+                },
+            )
+            data = res.json()
+
+            if res.status_code == 200 and "id" in data:
+                media_ids.append(data["id"])
+            else:
+                print(f"❌ Facebook Photo Upload Error ({img_url}): {data}")
+
+        if not media_ids:
+            return False
+
+        feed_url = (
+            f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{FB_PAGE_ID}/feed"
+        )
+        attached_media = json.dumps([{"media_fbid": mid} for mid in media_ids])
+
+        pub_res = requests.post(
+            feed_url,
+            data={
+                "message": caption,
+                "attached_media": attached_media,
+                "access_token": FB_ACCESS_TOKEN,
+            },
+        )
+        pub_data = pub_res.json()
+
+        if pub_res.status_code == 200 and "id" in pub_data:
+            print(
+                f"✅ Posted {len(media_ids)} photos to Facebook successfully! Post ID: {pub_data['id']}"
+            )
+            return True
+        else:
+            print(f"❌ Facebook Multi-Photo Publish Error: {pub_data}")
+            return False
+    except Exception as e:
+        print(f"❌ Failed to post multiple photos to Facebook: {e}")
+        return False
+
+
 def post_photo_to_instagram(image_url, caption):
-    """Posts image + caption to Instagram Business Account via 2-step process with a delay."""
+    """Posts a single image + caption to Instagram Business Account via 2-step process with a delay."""
     if not FB_ACCESS_TOKEN:
         print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
         return False
@@ -299,6 +366,98 @@ def post_photo_to_instagram(image_url, caption):
         return False
 
 
+def post_photos_to_instagram(image_urls, caption):
+    """Posts 1 image or up to 6 photos as an Instagram carousel."""
+    if not FB_ACCESS_TOKEN:
+        print("❌ Error: FB_ACCESS_TOKEN environment variable is missing.")
+        return False
+
+    urls = image_urls[:MAX_PHOTOS_PER_POST]
+    if not urls:
+        return False
+
+    if len(urls) == 1:
+        return post_photo_to_instagram(urls[0], caption)
+
+    container_url = (
+        f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media"
+    )
+    child_ids = []
+
+    try:
+        for img_url in urls:
+            res = requests.post(
+                container_url,
+                data={
+                    "image_url": img_url,
+                    "is_carousel_item": "true",
+                    "access_token": FB_ACCESS_TOKEN,
+                },
+            )
+            data = res.json()
+
+            if res.status_code == 200 and "id" in data:
+                child_ids.append(data["id"])
+            else:
+                print(
+                    f"❌ Instagram Carousel Item Error ({img_url}): {data}"
+                )
+
+        if len(child_ids) < 2:
+            print(
+                "⚠️ Fewer than 2 carousel items succeeded; falling back to single photo."
+            )
+            return post_photo_to_instagram(urls[0], caption)
+
+        print(
+            f"⏳ Waiting for {len(child_ids)} Instagram carousel items to process..."
+        )
+        time.sleep(6)
+
+        carousel_res = requests.post(
+            container_url,
+            data={
+                "media_type": "CAROUSEL",
+                "children": ",".join(child_ids),
+                "caption": caption,
+                "access_token": FB_ACCESS_TOKEN,
+            },
+        )
+        carousel_data = carousel_res.json()
+
+        if carousel_res.status_code != 200 or "id" not in carousel_data:
+            print(f"❌ Instagram Carousel Container Error: {carousel_data}")
+            return False
+
+        carousel_id = carousel_data["id"]
+
+        print("⏳ Waiting for Instagram carousel container to finalize...")
+        time.sleep(6)
+
+        publish_url = f"https://graph.facebook.com/{FB_GRAPH_VERSION}/{IG_USER_ID}/media_publish"
+        pub_res = requests.post(
+            publish_url,
+            data={
+                "creation_id": carousel_id,
+                "access_token": FB_ACCESS_TOKEN,
+            },
+        )
+        pub_data = pub_res.json()
+
+        if pub_res.status_code == 200 and "id" in pub_data:
+            print(
+                f"✅ Posted {len(child_ids)}-photo carousel to Instagram successfully! Post ID: {pub_data['id']}"
+            )
+            return True
+        else:
+            print(f"❌ Instagram Carousel Publish Error: {pub_data}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Failed to post carousel to Instagram: {e}")
+        return False
+
+
 # ==========================================
 # MAIN ROUTINE (POST 1 PRODUCT PER RUN)
 # ==========================================
@@ -335,16 +494,20 @@ def run_single_post():
 
     product = candidates[0]
     p_id = str(product["id"])
-    image_url = product["images"][0]["src"]
+    image_urls = [
+        img["src"]
+        for img in product["images"][:MAX_PHOTOS_PER_POST]
+        if img.get("src")
+    ]
     caption = create_single_product_caption(product)
 
     print(f"--- [Scheduled Post Execution] ---")
     print(f"Product: {product['title']}")
-    print(f"Image: {image_url}")
+    print(f"Images ({len(image_urls)}): {image_urls}")
 
     # Attempt publishing to both platforms
-    fb_success = post_photo_to_facebook(image_url, caption)
-    ig_success = post_photo_to_instagram(image_url, caption)
+    fb_success = post_photos_to_facebook(image_urls, caption)
+    ig_success = post_photos_to_instagram(image_urls, caption)
 
     # Log history if at least one platform succeeds
     if fb_success or ig_success:
